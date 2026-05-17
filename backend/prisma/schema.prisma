@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      UserRole   @default(USER)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  todos     Todo[]
+  teams     TeamMember[]
+  ownedTeams Team[]
+
+  @@map("users")
+}
+
+model Team {
+  id        String     @id @default(cuid())
+  name      String
+  description String?
+  logo      String?
+  ownerId   String
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  members   TeamMember[]
+  todos     Todo[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id      String     @id @default(cuid())
+  userId  String
+  teamId  String
+  role    MemberRole @default(MEMBER)
+  
+  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team    Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, teamId])
+  @@map("team_members")
+}
+
+model Todo {
+  id        String     @id @default(cuid())
+  title     String
+  description String?
+  completed Boolean    @default(false)
+  priority  Priority   @default(MEDIUM)
+  dueDate   DateTime?
+  
+  userId    String?
+  teamId    String?
+  
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team      Team?      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  tags      TodoTag[]
+  assignees TodoAssignee[]
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("todos")
+}
+
+model TodoTag {
+  id    String @id @default(cuid())
+  name  String
+  color String @default("#3B82F6")
+  
+  todoId String
+  todo   Todo   @relation(fields: [todoId], references: [id], onDelete: Cascade)
+
+  @@map("todo_tags")
+}
+
+model TodoAssignee {
+  id    String @id @default(cuid())
+  todoId String
+  userId String
+  
+  todo  Todo   @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([todoId, userId])
+  @@map("todo_assignees")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
