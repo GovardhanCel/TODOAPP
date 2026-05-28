@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 
 interface Todo {
@@ -11,6 +11,8 @@ interface Todo {
   createdAt: string;
 }
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5500';
+
 export default function Dashboard() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [title, setTitle] = useState('');
@@ -19,14 +21,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [userId] = useState('demo-user'); // In production, get from auth context
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5500';
-
   // Fetch todos on mount
-  useEffect(() => {
-    fetchTodos();
-  }, []);
-
-  const fetchTodos = async () => {
+  const fetchTodos = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/api/todos`, {
         params: { userId },
@@ -35,7 +31,11 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Failed to fetch todos:', error);
     }
-  };
+  }, [userId]); // 👈 add actual dependencies
+
+  useEffect(() => {
+    fetchTodos();
+  }, [fetchTodos]);
 
   const handleCreateTodo = async (e: React.FormEvent) => {
     e.preventDefault();
