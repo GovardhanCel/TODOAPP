@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function Teams() {
   return (
     <div className="space-y-6 p-8">
